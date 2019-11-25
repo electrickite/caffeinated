@@ -3,7 +3,7 @@ caffeinated
 
 Caffeinated is a small utility which prevents the system from entering an idle
 state by using a systemd logind idle inhibitor lock. It can be run either in the
-forground or as a daemon.
+foreground or as a daemon.
 
 Requirements
 ------------
