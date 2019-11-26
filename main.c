@@ -26,7 +26,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#if ELOGIND
+#include "version.h"
+#ifdef ELOGIND
 #include <elogind/sd-bus.h>
 #else
 #include <systemd/sd-bus.h>

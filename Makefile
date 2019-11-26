@@ -1,55 +1,55 @@
-include config.mk
+.POSIX:
 
-NAME=caffeinated
+NAME = caffeinated
+
+VERSION != grep VERSION version.h | cut -d \" -f2
+
+PREFIX = /usr/local
+MANPREFIX = $(PREFIX)/share/man
+
+SDBUS = systemd
+SDBUS.lib.systemd = -lsystemd
+SDBUS.lib.eligind = -lelogind
+SDBUS.lib = $(SDBUS.lib.$(SDBUS))
+SDBUS.define.elogind = -DELOGIND
+SDBUS.define = $(SDBUS.define.$(SDBUS))
+
+CC = cc
+LD = ld
+CFLAGS = -std=c99 -pedantic -Wall -Wextra -Os -s -D_GNU_SOURCE $(SDBUS.define)
+LDLIBS = -lbsd $(SDBUS.lib)
 
 SRC = main.c
-OBJ = ${SRC:.c=.o}
+OBJ = $(SRC:.c=.o)
 
-all: options ${NAME}
+all: options $(NAME)
 
 options:
-	@echo ${NAME} build options:
-	@echo "CFLAGS   = ${CFLAGS}"
-	@echo "LDFLAGS  = ${LDFLAGS}"
-	@echo "CC       = ${CC}"
+	@echo $(NAME) build options:
+	@echo "SDBUS    = $(SDBUS)"
+	@echo "CFLAGS   = $(CFLAGS)"
+	@echo "LDFLAGS  = $(LDFLAGS)"
+	@echo "LDLIBS   = $(LDLIBS)"
 
-.c.o:
-	@echo CC $<
-	@${CC} -c ${CFLAGS} $<
+$(NAME): $(OBJ)
+	$(CC) $(LDFLAGS) -o $(NAME) $(OBJ) $(LDLIBS)
 
-${OBJ}: config.mk
-
-${NAME}: ${OBJ}
-	@echo CC -o $@
-	@${CC} -o $@ ${OBJ} ${LDFLAGS}
+$(OBJ): $(SRC) version.h
 
 clean:
 	@echo cleaning
-	@rm -f ${NAME} ${OBJ} ${NAME}-${VERSION}.tar.gz
-
-dist: clean
-	@echo creating dist tarball
-	@mkdir -p ${NAME}-${VERSION}
-	@cp -R Makefile config.mk LICENSE \
-		${SRC} ${NAME}-${VERSION}
-	@tar -cf ${NAME}-${VERSION}.tar ${NAME}-${VERSION}
-	@gzip ${NAME}-${VERSION}.tar
-	@rm -rf ${NAME}-${VERSION}
+	rm -f $(NAME) $(OBJ)
 
 install: all
-	@echo installing executable file to ${DESTDIR}${PREFIX}/bin
-	@mkdir -p ${DESTDIR}${PREFIX}/bin
-	@cp -f ${NAME} ${DESTDIR}${PREFIX}/bin
-	@chmod 755 ${DESTDIR}${PREFIX}/bin/${NAME}
-	@echo installing manual page to ${DESTDIR}${MANPREFIX}/man1
-	@mkdir -p ${DESTDIR}${MANPREFIX}/man1
-	@sed "s/VERSION/${VERSION}/g" < ${NAME}.1 > ${DESTDIR}${MANPREFIX}/man1/${NAME}.1
-	@chmod 644 ${DESTDIR}${MANPREFIX}/man1/${NAME}.1
+	@echo installing in $(DESTDIR)$(PREFIX)
+	mkdir -p $(DESTDIR)$(PREFIX)/bin
+	cp -f $(NAME) $(DESTDIR)$(PREFIX)/bin
+	chmod 755 $(DESTDIR)$(PREFIX)/bin/$(NAME)
+	mkdir -p $(DESTDIR)$(MANPREFIX)/man1
+	sed "s/VERSION/$(VERSION)/g" < $(NAME).1 > $(DESTDIR)$(MANPREFIX)/man1/$(NAME).1
+	chmod 644 $(DESTDIR)$(MANPREFIX)/man1/$(NAME).1
 
 uninstall:
-	@echo removing executable file from ${DESTDIR}${PREFIX}/bin
-	@rm -f ${DESTDIR}${PREFIX}/bin/${NAME}
-	@echo removing manual page from ${DESTDIR}${MANPREFIX}/man1
-	@rm -f ${DESTDIR}${MANPREFIX}/man1/${NAME}.1
-
-.PHONY: all options clean dist install uninstall
+	@echo removing files from $(DESTDIR)$(PREFIX)
+	rm -f $(DESTDIR)$(PREFIX)/bin/$(NAME)
+	rm -f $(DESTDIR)$(MANPREFIX)/man1/$(NAME).1

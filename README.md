@@ -1,6 +1,5 @@
 caffeinated
 ===========
-
 Caffeinated is a small utility which prevents the system from entering an idle
 state by using a systemd logind idle inhibitor lock. It can be run either in the
 foreground or as a daemon.
@@ -9,10 +8,10 @@ Requirements
 ------------
 Caffeinated requires the following software to build:
 
-  * C compiler (ie. GCC)
+  * C compiler
   * make
-  * pkg-config
   * libsystemd _or_ libelogind
+  * libbsd
 
 Installation
 ------------
@@ -21,9 +20,9 @@ necessary):
 
     $ make clean install
 
-Or add `ELOGIND=1` to use libelogind:
+Or add `SDBUS=elogind` to use libelogind:
 
-    $ make ELOGIND=1 clean install
+    $ make SDBUS=elogind clean install
 
 Usage
 -----
