@@ -118,14 +118,13 @@ void print_version(void) {
 
 void print_help(void) {
 	printf("Usage: %s [OPTIONS]\n\
-\n\
 Prevents system idle.\n\
 \n\
 Options:\n\
     -h          print this help message\n\
     -v          print program version information\n\
     -d          run as background daemon\n\
-    -p PATH     pidfile PATH\n\
+    -p PATH     create pidfile at PATH\n\
 ", PROGNAME);
 }
 
