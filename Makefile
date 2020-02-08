@@ -36,7 +36,7 @@ OBJ = main.o
 all: $(NAME)
 
 $(NAME): $(OBJ)
-	$(CC) $(LDFLAGS) $(LDLIBS) -o $(NAME) $(OBJ) $(WAYLAND_SRC)
+	$(CC) $(LDLIBS) -o $(NAME) $(OBJ) $(WAYLAND_SRC) $(LDFLAGS)
 
 $(OBJ): $(SRC)
 
