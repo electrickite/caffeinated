@@ -1,4 +1,4 @@
-/* Copyright 2019 Corey Hinshaw
+/* Copyright 2019-2020 Corey Hinshaw
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -32,6 +32,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 #else
 #include <systemd/sd-bus.h>
 #endif
+#ifdef WAYLAND
+#include <wayland-client.h>
+#include "idle-inhibit-unstable-v1-client-protocol.h"
+#endif
 
 #define PROGNAME "caffeinated"
 
@@ -40,6 +44,52 @@ static char *pid_path = NULL;
 static struct pidfh *pfh = NULL;
 static int lock_fd = -1;
 static struct sd_bus *bus = NULL;
+
+#ifdef WAYLAND
+static struct wl_compositor *compositor = NULL;
+static struct wl_surface *surface = NULL;
+static struct wl_display *display = NULL;
+static struct zwp_idle_inhibit_manager_v1 *wl_idle_inhibit_manager = NULL;
+static struct zwp_idle_inhibitor_v1 *wl_idle_inhibitor = NULL;
+
+static void handle_wl_global(void *data, struct wl_registry *registry,
+		uint32_t name, const char *interface, uint32_t version) {
+	if (strcmp(interface, wl_compositor_interface.name) == 0) {
+		compositor = wl_registry_bind(registry, name,
+			&wl_compositor_interface, 1);
+	} else if (strcmp(interface, zwp_idle_inhibit_manager_v1_interface.name) == 0) {
+		wl_idle_inhibit_manager = wl_registry_bind(registry, name,
+			&zwp_idle_inhibit_manager_v1_interface, 1);
+	}
+}
+
+static void handle_wl_global_remove(void *data, struct wl_registry *registry,
+		uint32_t name) {
+	// No op
+}
+
+static const struct wl_registry_listener registry_listener = {
+	.global = handle_wl_global,
+	.global_remove = handle_wl_global_remove,
+};
+
+static void init_wl_surface(void) {
+	display = wl_display_connect(NULL);
+	if (display == NULL) {
+		errx(EXIT_FAILURE, "failed to create wl_display");
+	}
+
+	struct wl_registry *registry = wl_display_get_registry(display);
+	wl_registry_add_listener(registry, &registry_listener, NULL);
+	wl_display_roundtrip(display);
+
+	if (wl_idle_inhibit_manager == NULL || compositor == NULL) {
+		errx(EXIT_FAILURE, "no wl_idle_inhibit_manager or wl_compositor support");
+	}
+
+	surface = wl_compositor_create_surface(compositor);
+}
+#endif
 
 static void acquire_lock(void) {
 	sd_bus_message *msg = NULL;
@@ -66,6 +116,14 @@ static void acquire_lock(void) {
 		warn("Failed to copy lock file descriptor");
 	}
 
+#ifdef WAYLAND
+	if (wl_idle_inhibitor == NULL) {
+		wl_idle_inhibitor =
+			zwp_idle_inhibit_manager_v1_create_inhibitor(wl_idle_inhibit_manager, surface);
+		wl_display_roundtrip(display);
+	}
+#endif
+
 cleanup:
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(msg);
@@ -79,6 +137,14 @@ static void release_lock(void) {
 		close(lock_fd);
 	}
 	lock_fd = -1;
+
+#ifdef WAYLAND
+	if (wl_idle_inhibitor) {
+		zwp_idle_inhibitor_v1_destroy(wl_idle_inhibitor);
+		wl_idle_inhibitor = NULL;
+		wl_display_roundtrip(display);
+	}
+#endif
 }
 
 static void connect_to_bus(void) {
@@ -91,6 +157,10 @@ static void connect_to_bus(void) {
 static void cleanup(void) {
 	release_lock();
 	pidfile_remove(pfh);
+
+#ifdef WAYLAND
+	wl_surface_destroy(surface);
+#endif
 }
 
 void handle_signal(int sig) {
@@ -112,11 +182,11 @@ void handle_signal(int sig) {
 	}
 }
 
-void print_version(void) {
+static void print_version(void) {
 	printf("%s %s\n", PROGNAME, VERSION);
 }
 
-void print_help(void) {
+static void print_help(void) {
 	printf("Usage: %s [OPTIONS]\n\
 Prevents system idle.\n\
 \n\
@@ -140,7 +210,7 @@ static void set_pid_path(void) {
 	}
 }
 
-void parse_args(int argc, char *argv[]) {
+static void parse_args(int argc, char *argv[]) {
 	char c;
 	while ((c = getopt(argc, argv, ":hvdp:")) != -1) {
 		switch (c) {
@@ -192,6 +262,9 @@ int main(int argc, char *argv[]) {
 
 	pidfile_write(pfh);
 	connect_to_bus();
+#ifdef WAYLAND
+	init_wl_surface();
+#endif
 	acquire_lock();
 
 	for (;;) {

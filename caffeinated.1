@@ -5,7 +5,7 @@ Caffeinated \- Prevents system idle state
 .B caffeinated
 .RB [ OPTIONS ]
 .SH DESCRIPTION
-Caffeinated is a small utility which prevents the system from entering an idle state by taking a systemd logind idle inhibitor lock. It can be run either in the foreground or as a daemon.
+Caffeinated is a small utility which prevents the system from entering an idle state by taking a systemd logind idle inhibitor lock. If compiled with Wayland support, it will also create a Wayland idle inhibitor. It can be run either in the foreground or as a daemon.
 .SH OPTIONS
 .TP
 .B \-h
@@ -20,10 +20,10 @@ run as background daemon
 .B \-p PATH
 pidfile PATH
 .SH SIGNALS
-Sending SIGUSR1 will cause caffeinated to enable/disable its idle inhibitor.
+Sending SIGUSR1 will cause caffeinated to disable/enable its idle inhibitors.
 .SH AUTHORS
 Written by Corey Hinshaw.
 .SH COPYRIGHT
-Copyright 2019 Corey Hinshaw
+Copyright 2019-2020 Corey Hinshaw
 .br
 License: MIT License - See the LICENSE file for details.

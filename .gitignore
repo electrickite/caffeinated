@@ -1,2 +1,4 @@
 caffeinated
 *.o
+idle-inhibit-unstable-v1-client-protocol.h
+idle-inhibit-unstable-v1-protocol.c
