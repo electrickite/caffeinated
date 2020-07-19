@@ -39,10 +39,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */
 
 #define PROGNAME "caffeinated"
 
-static char daemonize = 0;
+static unsigned char daemonize = 0;
 static char *pid_path = NULL;
 static struct pidfh *pfh = NULL;
-static int lock_fd = -1;
+static signed int lock_fd = -1;
 static struct sd_bus *bus = NULL;
 
 #ifdef WAYLAND
@@ -95,7 +95,7 @@ static void acquire_lock(void) {
 	sd_bus_message *msg = NULL;
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 
-	int ret = sd_bus_call_method(bus, "org.freedesktop.login1",
+	signed int ret = sd_bus_call_method(bus, "org.freedesktop.login1",
 			"/org/freedesktop/login1", "org.freedesktop.login1.Manager",
 			"Inhibit", &error, &msg, "ssss",
 			"idle", PROGNAME, "Prevent system idle", "block");
@@ -148,7 +148,7 @@ static void release_lock(void) {
 }
 
 static void connect_to_bus(void) {
-	int ret = sd_bus_default_system(&bus);
+	signed int ret = sd_bus_default_system(&bus);
 	if (sd_bus_default_system(&bus) < 0) {
 		errx(-ret, "Failed to open D-Bus connection");
 	}
@@ -211,7 +211,7 @@ static void set_pid_path(void) {
 }
 
 static void parse_args(int argc, char *argv[]) {
-	char c;
+	signed char c;
 	while ((c = getopt(argc, argv, ":hvdp:")) != -1) {
 		switch (c) {
 			case 'h':
