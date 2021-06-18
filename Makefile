@@ -7,12 +7,19 @@ VERSION = $(shell grep VERSION version.h | cut -d \" -f2)
 PREFIX = /usr/local
 MANPREFIX = $(PREFIX)/share/man
 
-SDBUS = systemd
+SDBUS_LIB = $(shell pkgconf --libs libsystemd)
+
 ifeq ($(SDBUS), elogind)
 	SDBUS_LIB = -lelogind
-	SDBUS_DEFINE = -DELOGIND
-else
+else ifeq ($(SDBUS), systemd)
 	SDBUS_LIB = -lsystemd
+else ifdef SDBUS
+    $(error Invalid SDBUS)
+endif
+
+ifeq ($(strip $(SDBUS_LIB)), -lelogind)
+	SDBUS_DEFINE = -DELOGIND
+	SDBUS = elogind
 endif
 
 ifdef WAYLAND
